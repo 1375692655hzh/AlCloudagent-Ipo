@@ -1,0 +1,28 @@
+# Secrets
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Hermes 本地状态(如果有人把 ~/.hermes 也混进来)
+.hermes/cache/
+.hermes/pending/
+.hermes/.hub/quarantine/
+
+# Python(校验脚本用)
+__pycache__/
+*.pyc
+.venv/
+venv/
