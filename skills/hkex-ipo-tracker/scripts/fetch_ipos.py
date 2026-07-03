@@ -394,7 +394,11 @@ async def _handle_row(
         stats["failed"] += 1
         return
 
-    rel_path = dest.relative_to(repo_root).as_posix()
+    # Use absolute path when data-dir is outside repo, relative when inside
+    try:
+        rel_path = dest.relative_to(repo_root).as_posix()
+    except ValueError:
+        rel_path = str(dest)
     release_iso = parse_release_time_iso(row.release_time_raw)
 
     # UPSERT company + append state history if changed.
@@ -415,9 +419,20 @@ async def _handle_row(
     print(f"OK   {row.stock_code} {row.company_name} -> {rel_path}")
 
 
+def _try_relative(path: Path, base: Path) -> str:
+    """Return path relative to base if possible, else absolute string."""
+    try:
+        return path.relative_to(base).as_posix()
+    except ValueError:
+        return str(path)
+
+
 def company_json_rel(companies_root: Path, company_dir: str, repo_root: Path) -> str:
-    return (companies_root / company_dir / "company.json") \
-        .relative_to(repo_root).as_posix()
+    p = companies_root / company_dir / "company.json"
+    try:
+        return p.relative_to(repo_root).as_posix()
+    except ValueError:
+        return str(p)
 
 
 def _upsert_company(
@@ -546,7 +561,7 @@ def export_json(conn: sqlite3.Connection, data_root: Path, repo_root: Path) -> N
             "current_state": state,
             "last_updated": last_updated,
             "doc_count": len(documents),
-            "company_json": (company_json_abs.relative_to(repo_root).as_posix()),
+            "company_json": (_try_relative(company_json_abs, repo_root)),
         })
 
     manifest = {
@@ -562,7 +577,7 @@ def export_json(conn: sqlite3.Connection, data_root: Path, repo_root: Path) -> N
         json.dumps(manifest, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
-    print(f"Wrote {manifest_path.relative_to(repo_root)} "
+    print(f"Wrote {_try_relative(manifest_path, repo_root)} "
           f"({manifest['total_companies']} companies, {by_state})")
 
 
