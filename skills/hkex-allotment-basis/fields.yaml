@@ -1,0 +1,93 @@
+# 分配基准表 skill 的字段定义 + 业务规则配置
+#
+# 复用 _common/common_verify.py 的引擎，本 yaml 仅声明字段。
+# 与 HKIPO 项目 allotment_parser/fields.yaml 兼容（但简化：不用正则，全靠 HTML table parser）。
+
+# scalars: 配发结果公告里要抽取的关键 scalar 字段
+# 用 _common/common_tables.flatten_md_for_scalar 后正则匹配
+scalars:
+
+  - id: offer_price
+    name: 發售價
+    patterns:
+      - "發售價[^0-9]{0,15}(?P<v>[0-9.]+\\s*港元)"
+      - "最終發售價[^0-9]{0,30}每股[^0-9]{0,10}(?P<v>[0-9.]+)"
+    value_re: "(?P<v>[0-9.]+\\s*港元|[0-9.]+)"
+
+  - id: shares_global
+    name: 全球發售股份數目
+    patterns:
+      - "全球發售的發售股份數目[：:\\s]*(?P<v>[0-9,]+)"
+      - "發售股份數目[：:\\s]*(?P<v>[0-9,]+)\\s*股?\\s*H?\\s*股"
+    value_re: "(?P<v>[0-9,]+)"
+
+  - id: shares_hk_final
+    name: 香港公開發售最終股份數目
+    patterns:
+      - "香港公開發售的發售股份最終數目[：:\\s]*(?P<v>[0-9,]+)"
+      - "香港公開發售項下最終發售股份數目[：:\\s]*(?P<v>[0-9,]+)"
+    value_re: "(?P<v>[0-9,]+)"
+
+  - id: shares_intl_final
+    name: 國際配售最終股份數目
+    patterns:
+      - "國際配售的發售股份最終數目[：:\\s]*(?P<v>[0-9,]+)"
+      - "國際配售項下最終發售股份數目[：:\\s]*(?P<v>[0-9,]+)"
+      - "國際發售項下最終發售股份數目[：:\\s]*(?P<v>[0-9,]+)"
+    value_re: "(?P<v>[0-9,]+)"
+
+  - id: valid_applications
+    name: 有效申請數目
+    patterns:
+      - "有效申請數目[：:\\s]*(?P<v>[0-9,]+)"
+    value_re: "(?P<v>[0-9,]+)"
+
+  - id: accepted_applications
+    name: 獲接納申請數目
+    patterns:
+      - "獲接納申請數目[：:\\s]*(?P<v>[0-9,]+)"
+      - "成功申請數目[：:\\s]*(?P<v>[0-9,]+)"
+    value_re: "(?P<v>[0-9,]+)"
+
+  - id: oversub_hk
+    name: 香港公開發售認購水平
+    context_after: "配發結果詳情"
+    context_before: "國際配售"
+    patterns:
+      - "認購水平[：:\\s]*(?P<v>[0-9,.]+\\s*倍)"
+      - "認購倍數[：:\\s]*(?P<v>[0-9,.]+\\s*倍)"
+    value_re: "(?P<v>[0-9,.]+\\s*倍)"
+
+  - id: oversub_intl
+    name: 國際配售認購水平
+    context_after: "國際發售"
+    context_before: "承配人"
+    patterns:
+      - "認購水平[：:\\s]*(?P<v>[0-9,.]+\\s*倍)"
+      - "認購倍數[：:\\s]*(?P<v>[0-9,.]+\\s*倍)"
+    value_re: "(?P<v>[0-9,.]+\\s*倍)"
+
+  - id: placees_count
+    name: 承配人數目
+    patterns:
+      - "承配人數目[：:\\s]*(?P<v>[0-9,]+)"
+    value_re: "(?P<v>[0-9,]+)"
+
+# tables: 表格字段（用 anchor 在表头里找）
+tables:
+
+  - id: allotment_basis_a
+    name: 香港公開發售分配基準 甲組
+    # 表头被切碎到多个 cell，所以 anchor 要宽松；用 context_anchor 强制
+    # 前一行 section header 含「甲組」（避开 MinerU 把整个甲組表 HTML 灌进乙組表 context 的情况）。
+    header_anchor: "申請H股.*配發.*抽籤基準"
+    context_anchor: ["甲組", "甲 组", "甲 組"]
+
+  - id: allotment_basis_b
+    name: 香港公開發售分配基準 乙組
+    header_anchor: "申請H股.*配發.*抽籤基準"
+    context_anchor: ["乙組", "乙 组", "乙 組"]
+
+  - id: placee_concentration
+    name: 承配人集中度
+    header_anchor: "承配人.*獲配發H股數目.*配發佔國際配售"

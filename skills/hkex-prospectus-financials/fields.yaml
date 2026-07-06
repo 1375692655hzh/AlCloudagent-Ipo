@@ -1,0 +1,128 @@
+# 招股书财务表格字段配置
+#
+# 三大报表 + 关键财务比率。每个字段定义:
+#   - id: 字段唯一标识
+#   - name: 中文显示名
+#   - statement: income_statement | balance_sheet | cash_flow | ratio
+#   - row_anchor: 在报表里用来定位该行的关键词（用 .* 连接表示 AND）
+#   - years: 报告期年份数（默认 3：最近三年）
+#   - unit: 单位提示（百万元 / 千元 / 元），让 LLM 不要混淆
+
+# 三大报表定位（用表头 anchor 在 MinerU 输出里找）
+statements:
+
+  - id: income_statement
+    name: 損益表 / 综合损益表
+    header_anchor: "收入.*銷售.*經營開支.*盈利"
+    fallback_anchors:
+      - "收益.*收入.*毛利"
+      - "營業額.*銷售成本.*毛利"
+
+  - id: balance_sheet
+    name: 財務狀況表 / 资产负债表
+    header_anchor: "資產.*負債.*權益"
+    fallback_anchors:
+      - "非流動資產.*流動資產.*資產總額"
+      - "現金及現金等價物.*貿易應收款項"
+
+  - id: cash_flow
+    name: 現金流量表
+    header_anchor: "經營活動.*投資活動.*融資活動"
+    fallback_anchors:
+      - "經營業務.*所用現金"
+      - "現金流量"
+
+# 字段抽取：每个字段说明在哪个报表的哪一行
+fields:
+
+  # 损益表
+  - id: revenue
+    name: 营业收入
+    statement: income_statement
+    row_anchor: ["收入", "收益", "營業額"]
+    unit: 百万元
+
+  - id: cost_of_sales
+    name: 销售成本
+    statement: income_statement
+    row_anchor: ["銷售成本", "成本", "營業成本"]
+    unit: 百万元
+
+  - id: gross_profit
+    name: 毛利
+    statement: income_statement
+    row_anchor: ["毛利", "毛損"]
+    unit: 百万元
+
+  - id: operating_profit
+    name: 经营盈利
+    statement: income_statement
+    row_anchor: ["經營盈利", "經營虧損", "營業利潤"]
+    unit: 百万元
+
+  - id: net_profit
+    name: 年内溢利
+    statement: income_statement
+    row_anchor: ["年內溢利", "年內虧損", "淨利潤", "淨虧損"]
+    unit: 百万元
+
+  # 资产负债表
+  - id: total_assets
+    name: 资产总额
+    statement: balance_sheet
+    row_anchor: ["資產總額", "總資產", "資產總計"]
+    unit: 百万元
+
+  - id: total_liabilities
+    name: 负债总额
+    statement: balance_sheet
+    row_anchor: ["負債總額", "總負債", "負債總計"]
+    unit: 百万元
+
+  - id: total_equity
+    name: 权益总额
+    statement: balance_sheet
+    row_anchor: ["權益總額", "總權益", "股東權益"]
+    unit: 百万元
+
+  # 现金流量表
+  - id: cfo
+    name: 经营活动现金流
+    statement: cash_flow
+    row_anchor: ["經營活動", "所得現金", "所用現金"]
+    unit: 百万元
+
+  - id: cfi
+    name: 投资活动现金流
+    statement: cash_flow
+    row_anchor: ["投資活動", "所得現金", "所用現金"]
+    unit: 百万元
+
+  - id: cff
+    name: 融资活动现金流
+    statement: cash_flow
+    row_anchor: ["融資活動", "所得現金", "所用現金"]
+    unit: 百万元
+
+# 业务规则（会计恒等式 + 同比合理性）
+sanity_checks:
+
+  - id: accounting_equation
+    name: 會計恒等式：資產 = 負債 + 權益
+    rule: total_assets == total_liabilities + total_equity
+    tolerance_pct: 1.0
+
+  - id: gross_margin_range
+    name: 毛利率 ∈ 合理區間（0%-100%）
+    rule: 0 <= gross_profit / revenue <= 1
+    tolerance_pct: 0
+
+  - id: net_margin_range
+    name: 淨利率 ∈ 合理區間（-200%~100%）
+    rule: -2 <= net_profit / revenue <= 1
+    tolerance_pct: 0
+
+  - id: cfo_sign_consistent_with_net_profit
+    name: 經營現金流與淨利潤符號大體一致（持續經營公司）
+    rule: sign(cfo) == sign(net_profit) OR abs(cfo) > 0.5 * abs(net_profit)
+    tolerance_pct: 50

@@ -27,5 +27,12 @@ __pycache__/
 .venv/
 venv/
 
-# hkex-ipo-tracker 运行时数据(状态库、JSON、下载的 PDF)
+# 两个 HKEX IPO 抓取工具的运行时数据（状态库、JSON、下载的 PDF）
+# - skills/hkex-offering-tracker/   招股发行抓取
+# - skills/hkex-application-tracker/ 递表聆讯抓取
+# 两者共用同一个 data/ 目录
 data/
+
+# 临时测试产物（PDF 处理实验、debug 脚本、一次性输出）
+_tmp_*
+_tmp_mineru_test/

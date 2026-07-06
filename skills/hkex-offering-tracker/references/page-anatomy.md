@@ -76,10 +76,12 @@ URL 拼接规则:`https://www1.hkexnews.hk` + 相对路径(脚本中 `HKEX_BASE`
 
 ## 验证
 
-不带下载的干跑:
+不带下载的干跑：
 
 ```bash
-python skills/hkex-ipo-tracker/scripts/fetch_ipos.py --dry-run
+python skills/hkex-offering-tracker/scripts/fetch_offerings.py --dry-run
 ```
 
-输出会列出每条过滤后的招股记录,便于在改解析逻辑后快速验证。
+输出会列出每条过滤后的招股记录，便于在改解析逻辑后快速验证。
+
+注：递表聆讯数据请见姐妹工具 `skills/hkex-application-tracker/`，其抓取的是 `appindex.html` 背后的静态 JSON，详见该 skill 的 `references/json-api.md`。

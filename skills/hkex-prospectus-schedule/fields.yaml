@@ -1,0 +1,30 @@
+# 招股书档位表字段配置（参考用，目前 extract_schedule.py 是硬编码）
+#
+# 档位表的字段是固定的 5 列结构（组别/股数/金额/中签率/平均分配），
+# 后两列留空由 hkex-allotment-basis 反填，所以本 yaml 主要描述定位关键词 + 校验规则。
+
+schedule_keywords:
+  - "申請認購"
+  - "申请认购"
+  - "應繳款項"
+  - "应缴款项"
+  - "股份數目"
+  - "股份数目"
+  - "入場費"
+  - "入场费"
+
+# 定位条件：单页至少命中几个关键词
+min_keyword_hits: 2
+
+# 文本路径：比值容差（小于此比例的配对被当作噪声过滤）
+ratio_tolerance: 0.02
+
+# 比值量化粒度（用于取众数）
+ratio_bucket_size: 0.5
+
+# 行数阈值（文本路径少于此则降级到 vision）
+min_rows_text: 10
+
+# 业务规则：金额 ≈ 股数 × offer_price × price_fee_ratio
+price_fee_ratio: 1.0085065  # 1% 经纪 + 0.0027% SFC + 0.00565% 联交所 + 0.00015% 会财局
+linear_residual_tolerance: 0.02

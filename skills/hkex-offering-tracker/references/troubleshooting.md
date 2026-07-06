@@ -18,7 +18,7 @@ curl -A "Mozilla/5.0" "https://www1.hkexnews.hk/search/predefineddoc.xhtml?lang=
 grep -c "/listedco/listconews/" page.html
 ```
 
-- 若 grep 返回 0 → 页面结构变了,需更新 [`scripts/fetch_ipos.py`](../scripts/fetch_ipos.py) 的 `parse_listing_html()`
+- 若 grep 返回 0 → 页面结构变了，需更新 [`scripts/fetch_offerings.py`](../scripts/fetch_offerings.py) 的 `parse_listing_html()`
 - 若 grep 返回 N > 0 但解析为 0 → 容器爬升逻辑失效,调整向上爬升层数(当前 6 层)
 
 ## PDF 下载失败(HTTP 4xx/5xx)
@@ -39,7 +39,7 @@ grep -c "/listedco/listconews/" page.html
 
 **修复**:
 - `DOWNLOAD_TIMEOUT` 已设为 180 秒
-- 如仍超时,在 [`scripts/fetch_ipos.py`](../scripts/fetch_ipos.py) 顶部调整 `DOWNLOAD_TIMEOUT = httpx.Timeout(300.0, ...)`
+- 如仍超时，在 [`scripts/common.py`](../scripts/common.py) 顶部调整 `DOWNLOAD_TIMEOUT = httpx.Timeout(300.0, ...)`
 - 或降低 `CONCURRENCY = 2`
 
 ## 公司名含非法字符
@@ -61,7 +61,7 @@ grep -c "/listedco/listconews/" page.html
 ```bash
 rm data/state.db
 # 重新运行会重建 schema 并重抓
-python skills/hkex-ipo-tracker/scripts/fetch_ipos.py
+python skills/hkex-offering-tracker/scripts/fetch_offerings.py
 ```
 
 ## manifest.json 与实际文件不一致
@@ -78,7 +78,7 @@ sqlite3 data/state.db "DELETE FROM ipo_documents WHERE local_path NOT IN ($(find
 
 # 方式 B:清库重抓(简单粗暴)
 rm -rf data/
-python skills/hkex-ipo-tracker/scripts/fetch_ipos.py
+python skills/hkex-offering-tracker/scripts/fetch_offerings.py
 ```
 
 ## 繁体/简体匹配失败
@@ -106,11 +106,12 @@ sqlite3 data/state.db "SELECT url_hash, pdf_url FROM ipo_documents LIMIT 5"
 
 **症状**:某 doc_type 没被识别,或被错误归类
 
-**修复**:在 [`scripts/state.py`](../scripts/state.py) 的 `STATE_INFER_RULES` 加映射,然后重跑 `export_json` 即可,无需重抓 PDF:
+**修复**:在 [`scripts/state.py`](../scripts/state.py) 的 `STATE_INFER_RULES` 加映射，然后重跑 `export_json` 即可，无需重抓 PDF：
 
 ```bash
-python skills/hkex-ipo-tracker/scripts/export_json.py
-# (注:第一版未拆分 export_json 为独立脚本,运行 fetch_ipos.py 即可触发)
+# 重跑任一 fetcher 即可触发 export_json，例如：
+python skills/hkex-offering-tracker/scripts/fetch_offerings.py --dry-run
+# 注：第一版未拆分 export_json 为独立脚本，由 fetch_offerings.py / fetch_applications.py 末尾调用 common.export_json
 ```
 
 ## 依赖安装失败
@@ -124,7 +125,7 @@ python -m venv .venv
 .venv\Scripts\activate    # Windows
 source .venv/bin/activate  # macOS/Linux
 
-pip install -r skills/hkex-ipo-tracker/scripts/requirements.txt
+pip install -r skills/hkex-offering-tracker/scripts/requirements.txt
 ```
 
 如 `lxml` 在 Windows 编译失败,改用预编译 wheel:

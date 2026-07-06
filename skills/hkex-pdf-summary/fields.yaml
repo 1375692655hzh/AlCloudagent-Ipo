@@ -1,0 +1,85 @@
+# hkex-pdf-summary 字段配置（YAML 驱动）
+#
+# 字段分两类：
+#   - scalar: 单值字段（业务概览、行业地位等）
+#   - list:   多元素结构（风险因素、主要股东等）
+#
+# 复用 hkex-pdf-field-extractor (Skill C) 已有的字段时，从其 field_dictionary.py 继承。
+
+scalars:
+
+  - id: business_overview
+    name: 业务概览
+    type: scalar
+    description: 用 300-500 字概述公司主营业务、产品/服务、目标市场、商业模式
+    prompt: |
+      阅读以下招股书 Markdown 文本，用中文写一段 300-500 字的「业务概览」。
+      必须覆盖：(1) 主营业务是什么；(2) 核心产品/服务；(3) 目标客户/市场；
+      (4) 商业模式（怎么赚钱）；(5) 公司发展阶段。
+      严格按 JSON 输出：{"business_overview": "...这段文字..."}
+      不要 markdown 标记，不要分点，写成一整段。
+      找不到主营业务信息返回 {"business_overview": null}。
+
+  - id: industry_position
+    name: 行业地位
+    type: scalar
+    description: 公司在行业内的地位（市场份额、排名、竞争格局）
+    prompt: |
+      阅读以下招股书 Markdown，提取公司在行业中的地位。
+      严格按 JSON 输出：{"industry_position": "..."}
+      必须包含：(1) 行业规模/增速；(2) 公司市场份额或排名（如有数字必须保留）；
+      (3) 主要竞争对手（如有具名）。
+      不超过 200 字。找不到返回 null。
+
+  - id: history_and_restructuring
+    name: 历史与重组
+    type: scalar
+    description: 公司发展历史 + 上市前重大重组
+    prompt: |
+      阅读以下招股书 Markdown 的「历史及重组」章节，用 200-400 字概述：
+      (1) 公司成立背景；(2) 关键发展里程碑（带年份）；(3) 上市前重大重组。
+      严格按 JSON 输出：{"history_and_restructuring": "..."}。找不到返回 null。
+
+  - id: use_of_proceeds_summary
+    name: 募资用途摘要
+    type: scalar
+    description: 募资用途的整体描述（金额/百分比投向）
+    prompt: |
+      阅读以下招股书 Markdown 的「未来计划及所得款项用途」章节，用 200-400 字概述：
+      (1) 募资总额；(2) 主要投向（按百分比从高到低列前 5 项）；(3) 关键项目说明。
+      数字必须原样保留。
+      严格按 JSON 输出：{"use_of_proceeds_summary": "..."}。
+
+lists:
+
+  - id: key_risks
+    name: 主要风险
+    type: list
+    description: 招股书列出的前 5 大主要风险因素
+    prompt: |
+      阅读以下招股书 Markdown 的「风险因素」章节，挑出最重要的 5 个风险。
+      严格按 JSON 输出：
+      {"key_risks": [{"title": "...", "detail": "..."}, ...]}
+      - title: 5-15 字短标题
+      - detail: 50-100 字说明
+      不要写"详见招股书第 X 页"，要写具体内容。
+
+  - id: top_shareholders
+    name: 主要股东
+    type: list
+    description: 上市前的主要股东（前 5 大）
+    prompt: |
+      阅读以下招股书 Markdown 的「主要股东」章节，列出上市前的主要股东（前 5 大）。
+      严格按 JSON 输出：
+      {"top_shareholders": [{"name": "...", "shares": ..., "percentage": "...%"}, ...]}
+      数字原样保留（带逗号/百分号）。找不到返回 {"top_shareholders": []}。
+
+  - id: cornerstone_investors
+    name: 基石投资者
+    type: list
+    description: 基石投资者列表（如有）
+    prompt: |
+      阅读以下招股书 Markdown 的「基石投资者」章节，列出所有基石投资者。
+      严格按 JSON 输出：
+      {"cornerstone_investors": [{"name": "...", "amount_usd": ..., "shares": ..., "lockup_days": ...}, ...]}
+      没有基石投资者章节返回 {"cornerstone_investors": []}。
